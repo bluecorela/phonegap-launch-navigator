@@ -36,16 +36,19 @@
 @synthesize locationSuccess;
 @synthesize locationError;
 @synthesize locationManager;
-
+@synthesize appNames;
+@synthesize navigateParamNames;
+@synthesize appLocationTypes;
 /**********************
 * Internal properties
 **********************/
 static WE_Logger* logger;
-static NSArray* appNames;
-static NSArray* navigateParamNames;
+//static NSArray* appNames;
+// static NSArray *s_appNames = nil;
+//static NSArray* navigateParamNames;
 
 // Valid input location types for apps
-static NSDictionary* appLocationTypes;
+//static NSDictionary* appLocationTypes;
 
 static BOOL enableGeocoding;
 static BOOL useMapKit;
@@ -81,7 +84,7 @@ static NSDictionary* extras;
         self.locationManager = [[CLLocationManager alloc] init];
         self.locationManager.delegate = self;
       
-        navigateParamNames = @[
+        self.navigateParamNames = @[
           @"appName",
           @"destType",
           @"dest",
@@ -94,7 +97,7 @@ static NSDictionary* extras;
           @"extras"
         ];
 
-        appNames = @[
+        self.appNames = @[
          @"apple_maps",
          @"citymapper",
          @"google_maps",
@@ -115,7 +118,7 @@ static NSDictionary* extras;
          @"gaode"
          ];
       
-        appLocationTypes = @{
+        self.appLocationTypes = @{
          @(LNAppAppleMaps): LNLocTypeBoth,
          @(LNAppCitymapper): LNLocTypeCoords,
          @(LNAppGoogleMaps): LNLocTypeBoth,
@@ -140,6 +143,7 @@ static NSDictionary* extras;
     return self;
 }
 
+
 - (WE_Logger*)getLogger{
     return logger;
 }
@@ -150,12 +154,12 @@ static NSDictionary* extras;
 
 - (NSArray*) getAppNames
 {
-    return appNames;
+    return self.appNames;
 }
 
 - (NSDictionary*) getAppLocationTypes
 {
-    return appLocationTypes;
+    return self.appLocationTypes;
 }
 
 - (BOOL) isAppAvailable:(NSString*)appName{
@@ -165,7 +169,8 @@ static NSDictionary* extras;
 
 - (NSDictionary*) availableApps{
     NSMutableDictionary* results = [NSMutableDictionary new];
-    for(id object in appNames){
+    NSLog(@"%@", self.appNames);
+    for(id object in self.appNames){
         NSString* appName = object;
         BOOL result = [self isMapAppInstalled:[self mapApp_NameToLN:appName]];
         [results setObject:[NSNumber numberWithBool:result] forKey:appName];
@@ -179,6 +184,7 @@ static NSDictionary* extras;
           success:(NavigateSuccessBlock)success
              fail:(NavigateFailBlock)fail
 {
+
   // Set state
   navigateParams = params;
   self.navigateSuccess = success;
@@ -209,6 +215,8 @@ static NSDictionary* extras;
   if(!isAvailable){
       fail([NSString stringWithFormat:@"%@ is not installed on the device", params[@"appName"]]);
       return;
+  } else {
+      NSLog(@"The app is available");
   }
   
   if(![params[@"dest"] isKindOfClass:[NSString class]]) {
@@ -861,8 +869,9 @@ static NSDictionary* extras;
     if([navigateParams[@"destType"] isEqual: LNLocTypeCoords]){
         destCoord = [self stringToCoords:navigateParams[@"dest"]];
         
-        
-        if([appLocationTypes objectForKey:@(app)] == LNLocTypeAddress){
+        NSLog(@"Before");
+        if([self.appLocationTypes objectForKey:@(app)] == @"name"){
+            NSLog(@"Reached");
             if([self isGeocodingEnabled]){
                 if([self isNetworkAvailable]){
                     [self reverseGeocode:navigateParams[@"dest"] success:^(MKMapItem* destItem, MKPlacemark* destPlacemark) {
@@ -894,7 +903,7 @@ static NSDictionary* extras;
     }else{ // [jsDestType isEqual: LNLocTypeAddress]
         destAddress = navigateParams[@"dest"];
         
-        if([appLocationTypes objectForKey:@(app)] == LNLocTypeCoords || (app == LNAppAppleMaps && useMapKit)){
+        if([self.appLocationTypes objectForKey:@(app)] == LNLocTypeCoords || (app == LNAppAppleMaps && useMapKit)){
             if([self isGeocodingEnabled]){
                 if([self isNetworkAvailable]){
                     [self geocode:navigateParams[@"dest"] success:^(MKMapItem* destItem, MKPlacemark* destPlacemark) {
@@ -931,7 +940,7 @@ static NSDictionary* extras;
         startCoord = [self stringToCoords:navigateParams[@"start"]];
         logMsg = [NSString stringWithFormat:@"%@ from %@", logMsg, navigateParams[@"start"]];
         
-        if([appLocationTypes objectForKey:@(app)] == LNLocTypeAddress){
+        if([self.appLocationTypes objectForKey:@(app)] == LNLocTypeAddress){
             if([self isGeocodingEnabled]){
                 if([self isNetworkAvailable]){
                     [self reverseGeocode:navigateParams[@"start"] success:^(MKMapItem* startItem, MKPlacemark* startPlacemark) {
@@ -964,7 +973,7 @@ static NSDictionary* extras;
         startAddress = navigateParams[@"start"];
         logMsg = [NSString stringWithFormat:@"%@ from %@", logMsg, startAddress];
         
-        if([appLocationTypes objectForKey:@(app)] == LNLocTypeCoords || (app == LNAppAppleMaps && useMapKit)){
+        if([self.appLocationTypes objectForKey:@(app)] == LNLocTypeCoords || (app == LNAppAppleMaps && useMapKit)){
             if([self isGeocodingEnabled]){
                 if([self isNetworkAvailable]){
                     [self geocode:startAddress success:^(MKMapItem* startItem, MKPlacemark* startPlacemark) {
@@ -1311,11 +1320,12 @@ static NSDictionary* extras;
         return NO;
     }
     
+    NSLog(@"%@", urlPrefix);
     return [[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:urlPrefix]];
 }
 
 -(void) ensureNavigateParamNames{
-  for(id object in navigateParamNames){
+  for(id object in self.navigateParamNames){
     NSString* key = object;
     if(![navigateParams objectForKey:key]){
       [navigateParams setValue:nil forKey:key];
