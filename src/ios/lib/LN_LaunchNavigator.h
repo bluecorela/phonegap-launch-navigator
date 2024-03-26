@@ -83,7 +83,9 @@ typedef void(^LocationErrorBlock)(NSError*);
 @property (nonatomic, strong) LocationSuccessBlock locationSuccess;
 @property (nonatomic, strong) LocationErrorBlock locationError;
 @property (retain, nonatomic) CLLocationManager* locationManager;
-
+@property (nonatomic, strong) NSArray *appNames;
+@property (nonatomic, strong) NSArray *navigateParamNames;
+@property (nonatomic, strong) NSDictionary *appLocationTypes;
 /*******************
 * Public API
 *******************/
